@@ -1,8 +1,9 @@
 import argparse, math
 
-#####
-# Here be secrets
-#####
+
+### ------------------------ ###
+### Here be secrets          ###
+### ------------------------ ###
 # If you'd like to substitute your own secret function(s), all you have 
 # to do is define a new function in the Secret class, and change the 
 # return of the secret() to that function.
@@ -11,8 +12,7 @@ class Secret:
     'Class to abstract a secret function, and allow it to be swapped in and out.'
 
     def secret(self, num):
-        return num
-        # return simpleSecret(num);
+        return simpleSecret(num);
 
     def simpleSecret(self, num):
         return 2*num
@@ -21,6 +21,34 @@ class Secret:
         num = math.factorial(num)+5
         num = num/6
         return num
+
+    def nonAdditiveSecret(self, num):
+        return num**2
+
+
+def isSecretAdditive(secret, num):
+    # Input validation
+    num = int(num)
+
+    # Verify large prime generation
+    if num > 1000000:
+
+        # If very large fail fast (this could be disabled with a 
+        # with a commandline flag like: 'No warranty mode')
+        if num > 1000000000:
+            return largePrimeMessage
+
+        a = input('Continue with generation of large primes? It could take a while... (y/n): ')
+        
+        if a.lower() is 'y' or a.lower() is 'yes':
+            return 'Stop requested by user'
+
+        
+
+    # Generate Primes
+    primes = subPrimes(num)
+
+    return "Still working on method"
 
 
 # This function returns a list of all the primes under the passed in num
@@ -57,6 +85,15 @@ def subPrimes(num):
     # print 'Primes below ' + str(num) + ' are:\n\t' + str(primes)
 
     return primes
+
+
+### ------------------------ ###
+### Standard Messages        ###
+### ------------------------ ###
+successMessage = 'Success! The secret function is additive for all primes lower than value given\n\tAdditive means: secret( x+y ) = secret( x ) + secret( y )'
+failedMessage = 'Failed! The secret function is not additive for all primes lower than the value given'
+nanMessage = 'Failed! Input given is not a number.'
+largePrimeMessage = 'Program was stopped because primes would be very large'
 
 
 ### ------------------------ ###
@@ -100,8 +137,31 @@ def tests(secret):
 
 
     ### ------------------------ ###
-    ### Test Name
+    ### Overlarge Prime Test     ###
     ### ------------------------ ###
+
+    failed = False
+    message = ''
+
+    # Test one more than limit (could extract this limit to be a global var)
+    m = isSecretAdditive({}, 1000000001)
+    if m is not largePrimeMessage:
+        failed = True
+        message = 'Failed to break when given a barely overlarge number for primes'
+    
+    reportTestResults('Overlarge Prime', failed, message)
+    
+
+    failed = False
+    message = ''
+
+    # Test random lots more than limit
+    m = isSecretAdditive({}, 35206089431)
+    if m is not largePrimeMessage:
+        failed = True
+        message = 'Failed to break when given a very overlarge number for primes'
+
+    reportTestResults('Way large Prime', failed, message)
 
 
 
@@ -116,7 +176,6 @@ def reportTestResults(testName, failed, message=''):
     print p
 
 
-
 ### Respond to call from command line ###
 if __name__ == "__main__":
     ### Arg Parsing ###
@@ -124,6 +183,7 @@ if __name__ == "__main__":
     parser.add_argument('number', help='All primes tested with the secret function will be under this value')
     parser.add_argument('-t', '--test', help='Add this flag to run the tests', action='store_true')
     args = parser.parse_args()
+    # print str(args)
 
     # Instantiate the secret class
     s = Secret()
@@ -131,3 +191,6 @@ if __name__ == "__main__":
     if args.test:
         tests(s)
 
+    m = isSecretAdditive(s, args.number)
+    if not args.test:
+        print str(m)
