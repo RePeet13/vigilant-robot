@@ -1,4 +1,4 @@
-import argparse, math, sys
+import argparse, math, sys, time
 
 ### ------------------------ ###
 ### Here be secrets          ###
@@ -15,18 +15,18 @@ class Secret:
 
     def compute(self, num):
         return {
-            'secret' : secret(num),
-            'superSimpleSecret': superSimpleSecret(num),
-            'simpleSecret' : simpleSecret(num),
-            'weirdSecret' : weirdSecret(num),
-            'nonAdditiveSecret' : nonAdditiveSecret(num),
-        }.get(self.fn, secret(num))
+            'secret' : self.secret(num),
+            'superSimpleSecret': self.superSimpleSecret(num),
+            'simpleSecret' : self.simpleSecret(num),
+            'weirdSecret' : self.weirdSecret(num),
+            'nonAdditiveSecret' : self.nonAdditiveSecret(num),
+        }.get(self.fn, self.secret(num))
 
     # This is the default function that will be called if you don't 
     # pass a different function name, which is mainly used to enable  
     # testing.
     def secret(self, num):
-        return superSimpleSecret(num);
+        return self.superSimpleSecret(num);
 
     ### ------------------------ ###
 
@@ -50,8 +50,10 @@ class Secret:
 
 def isSecretAdditive(secret, num):
     # Input validation
-    num = int(num)
-    # TODO have except here to catch and set nanMessage
+    try:
+        num = int(num)
+    except ValueError:
+        return nanMessage
 
     # Verify large prime generation
     if num > 1000000:
@@ -66,12 +68,22 @@ def isSecretAdditive(secret, num):
         if a.lower() is 'y' or a.lower() is 'yes':
             return 'Stop requested by user'
 
-        
-
-    # Generate Primes
     primes = subPrimes(num)
 
-    return "Still working on method"
+    # Slight optimization to only calculate each combination once.
+    # The worst case is when the secret is additive, as it will have to go 
+    # through all combinations. It seems like generally if it's not 
+    # additive it will be should be clear fairly quick. Due to that I've 
+    # set the method to fail fast. Therefore Non-additive secrets should run 
+    # fairly quick after prime generation. The only exception I can think 
+    # of is if the function is non continuous, eg. additive under a point 
+    # and not above that point.
+    for i in range(len(primes)):
+        for j in range(i,len(primes)):
+            if secret.compute(primes[i] + primes[j]) != secret.compute(primes[i]) + secret.compute(primes[j]):
+                return failedMessage
+
+    return successMessage
 
 
 # This function returns a list of all the primes under the passed in num
@@ -84,7 +96,7 @@ def subPrimes(num):
     # Iterate through the list skipping the odds, and only considering 
     # up to the square root of the passed in number, as above that 
     # all the multiples are guaranteed to be taken care of already.
-    for i in xrange(3,int(num**0.5)+1,2):
+    for i in range(3,int(num**0.5)+1,2):
 
         # If the candidate has not been ruled out yet, rule out it's 
         # multiples later in the candidate list
@@ -102,7 +114,7 @@ def subPrimes(num):
     #
     # Start list comprehension at 3, and skip odds, bringing to the final 
     # list only the numbers that were not sieved out
-    primes = [2] + [x for x in xrange(3,num,2) if candidates[x]]
+    primes = [2] + [x for x in range(3,num,2) if candidates[x]]
 
     # Uncomment to see all the primes below the passed in number
     # print 'Primes below ' + str(num) + ' are:\n\t' + str(primes)
@@ -124,13 +136,13 @@ largePrimeMessage = 'Program was stopped because primes would be very large'
 ### ------------------------ ###
 def tests(secret):
 
-
     ### ------------------------ ###
     ### Input Validation Tests   ###
     ### ------------------------ ###
     # Check that input validations are working properly
     failed = False
     message = ''
+    start = time.clock()
 
     # Test number in string parses correctly
     try:
@@ -143,11 +155,12 @@ def tests(secret):
         failed = True
         message = 'Test threw an exception\n\t' + str(sys.exc_info()[0])
     
-    reportTestResults('String Number Input', failed, message)
+    reportTestResults('String Number Input', failed, start, message)
 
 
     failed = False
     message = ''
+    start = time.clock()
 
     # Test string input
     # This case is the same as 'all letter string' and 'empty string'
@@ -163,7 +176,7 @@ def tests(secret):
         failed = True
         message = 'Test threw an exception\n\t' + str(sys.exc_info()[0])
     
-    reportTestResults('String Input', failed, message)
+    reportTestResults('String Input', failed, start, message)
 
 
     ### ------------------------ ###
@@ -171,6 +184,7 @@ def tests(secret):
     ### ------------------------ ###
     failed = False
     message = ''
+    start = time.clock()
 
     # Test one more than limit (could extract this limit to be a global var)
     try:
@@ -182,7 +196,7 @@ def tests(secret):
         failed = True
         message = 'Test threw an exception\n\t' + str(sys.exc_info()[0])
 
-    reportTestResults('Overlarge Prime', failed, message)
+    reportTestResults('Overlarge Prime', failed, start, message)
     
 
     ### ------------------------ ###
@@ -190,6 +204,7 @@ def tests(secret):
     ### ------------------------ ###
     failed = False
     message = ''
+    start = time.clock()
 
     # Test random lots more than limit number
     try:
@@ -201,7 +216,7 @@ def tests(secret):
         failed = True
         message = 'Test threw an exception\n\t' + str(sys.exc_info()[0])
 
-    reportTestResults('Way large Prime', failed, message)
+    reportTestResults('Way large Prime', failed, start, message)
 
 
     ### ------------------------ ###
@@ -223,6 +238,7 @@ def tests(secret):
     
     failed = False
     message = ''
+    start = time.clock()
 
     try:
         myPrimes = subPrimes(1000)
@@ -231,7 +247,7 @@ def tests(secret):
             failed = True
             message = 'Length of prime arrays are different'
         else:
-            for i in xrange(len(primesGold)):
+            for i in range(len(primesGold)):
                 if primesGold[i] != myPrimes[i]:
                     failed = True
                     message = 'primesGold[{id}] ({pg}) did not match myPrimes[{id}] ({mp})'\
@@ -241,7 +257,7 @@ def tests(secret):
         failed = True
         message = 'Test threw an exception\n\t' + str(sys.exc_info()[0])
 
-    reportTestResults('Prime Generation', failed, message)
+    reportTestResults('Prime Generation', failed, start, message)
 
 
     ### ------------------------ ###
@@ -249,6 +265,7 @@ def tests(secret):
     ### ------------------------ ###
     failed = False
     message = ''
+    start = time.clock()
 
     # Test with a super simple secret that is definitely additive
     # (Just returns the input)
@@ -262,7 +279,7 @@ def tests(secret):
         failed = True
         message = 'Test threw an exception\n\t' + str(sys.exc_info()[0])
 
-    reportTestResults('Simple Additive 1', failed, message)
+    reportTestResults('Simple Additive 1', failed, start, message)
 
 
     ### ------------------------ ###
@@ -270,6 +287,7 @@ def tests(secret):
     ### ------------------------ ###
     failed = False
     message = ''
+    start = time.clock()
 
     try:
         secret.changeFunction('superSimpleSecret')
@@ -281,7 +299,7 @@ def tests(secret):
         failed = True
         message = 'Test threw an exception\n\t' + str(sys.exc_info()[0])
 
-    reportTestResults('Simple Additive 2', failed, message)
+    reportTestResults('Simple Additive 2', failed, start, message)
 
 
     ### ------------------------ ###
@@ -289,6 +307,7 @@ def tests(secret):
     ### ------------------------ ###
     failed = False
     message = ''
+    start = time.clock()
 
     # Test with a super simple secret that is definitely additive
     # (Just returns the input)
@@ -302,7 +321,7 @@ def tests(secret):
         failed = True
         message = 'Test threw an exception\n\t' + str(sys.exc_info()[0])
 
-    reportTestResults('Non Additive 1', failed, message)
+    reportTestResults('Non Additive 1', failed, start, message)
 
 
     ### ------------------------ ###
@@ -310,6 +329,7 @@ def tests(secret):
     ### ------------------------ ###
     failed = False
     message = ''
+    start = time.clock()
 
     try:
         secret.changeFunction('nonAdditiveSecret')
@@ -321,12 +341,14 @@ def tests(secret):
         failed = True
         message = 'Test threw an exception\n\t' + str(sys.exc_info()[0])
 
-    reportTestResults('Non Additive 2', failed, message)
+    reportTestResults('Non Additive 2', failed, start, message)
 
 
 ### Have a common format for test results so its legible
-def reportTestResults(testName, failed, message=''):
-    p = testName + ' Test : ' + ('Failed' if failed else 'Passed')
+def reportTestResults(testName, failed, start, message=''):
+    p = testName + ' Test : ' + ('Failed' if failed else 'Passed') + '\n\tTime Elapsed: ' + str(time.clock() - start)
+    p = '{tn} Test : {pf}\n\tTime Elapsed : {te:,.3f} s'\
+        .format(tn=testName, pf=('Failed' if failed else 'Passed'), te=(time.clock() - start))
 
     # If it failed and had a message, go ahead and print that too
     if failed and message:
