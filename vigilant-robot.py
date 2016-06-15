@@ -1,4 +1,5 @@
 import argparse, math, sys, time
+from multiprocessing import Pool
 
 ### ------------------------ ###
 ### Here be secrets          ###
@@ -78,12 +79,22 @@ def isSecretAdditive(secret, num):
     # fairly quick after prime generation. The only exception I can think 
     # of is if the function is non continuous, eg. additive under a point 
     # and not above that point.
-    for i in range(len(primes)):
-        for j in range(i,len(primes)):
-            if secret.compute(primes[i] + primes[j]) != secret.compute(primes[i]) + secret.compute(primes[j]):
-                return failedMessage
+    pool = Pool(processes=8)
+    mres = [pool.apply_async(threadedCompute,(secret, primes, i)) for i in range(len(primes))]
+    for r in [res.get() for res in mres]:
+        if not r:
+            return failedMessage
+
 
     return successMessage
+
+
+def threadedCompute(secret, primes, start):
+    tmp = primes[start]
+    for j in range(start, len(primes)):
+        if secret.compute(tmp + primes[j]) != secret.compute(tmp) + secret.compute(primes[j]):
+            return False
+    return True
 
 
 # This function returns a list of all the primes under the passed in num
