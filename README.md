@@ -11,6 +11,10 @@ Pro Tip: Use pypy in place of python (the binary is a drop in optimized replacem
 ```
 python vigilant-robot.py 20
 ```
+or
+```
+pypy vigilant-robot.py 20
+```
 
 ###Run program tests (number will be ignored)
 ```
@@ -21,3 +25,6 @@ python vigilant-robot.py 20 -t
 ```
 time python vigilant-robot.py 1000
 ```
+
+Pypy Performance Comparison
+![perf compare](https://raw.githubusercontent.com/RePeet13/vigilant-robot/master/pypy-perf-comparison.png)
