@@ -95,10 +95,19 @@ def isSecretAdditive(secret, num):
     # of is if the function is non continuous, eg. additive under a point 
     # and not above that point.
     print 'Checking if function is Additive'
+    progress = pb.ProgressBar(widgets=[
+                ' ', pb.widgets.Percentage(),
+                ' ', pb.widgets.Bar(),
+                ' ', pb.widgets.Timer(),
+                ' ', pb.widgets.AdaptiveETA(), ' '
+            ]) # bit of styling to make the bar make more sense
     pool = Pool(processes=2)
-    mres = [pool.apply_async(threadedCompute,(secret, primes, i)) for i in range(len(primes))]
-    for r in [res.get() for res in mres]:
-        if not r:
+    # Build list of processes. Queue from smallest to largest so that 
+    # progress bar doesn't just complete all at once.
+    mres = [pool.apply_async(threadedCompute,(secret, primes, i)) for i in range(len(primes)-1, -1, -1)]
+    for r in progress(range(len(mres))):
+        res = mres[r].get() # Blocks current thread until function returns
+        if not res:
             return failedMessage
 
     return successMessage
