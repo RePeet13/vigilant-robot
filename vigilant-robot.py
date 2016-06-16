@@ -1,4 +1,11 @@
-import argparse, math, sys, time
+import argparse, inspect, math, os, sys, time
+# Import subfolder modules (this is something I do with most of my python projects)
+# from http://stackoverflow.com/questions/279237/import-a-module-from-a-relative-path
+cmd_subfolder = os.path.realpath(os.path.abspath(os.path.join(os.path.split(inspect.getfile( inspect.currentframe() ))[0],'lib')))
+if cmd_subfolder not in sys.path:
+    sys.path.insert(0, cmd_subfolder)
+
+import progressbar as pb
 
 ### ------------------------ ###
 ### Here be secrets          ###
@@ -78,7 +85,14 @@ def isSecretAdditive(secret, num):
     # fairly quick after prime generation. The only exception I can think 
     # of is if the function is non continuous, eg. additive under a point 
     # and not above that point.
-    for i in range(len(primes)):
+    progress = pb.ProgressBar(widgets=[
+                ' ', pb.widgets.Percentage(),
+                ' ', pb.widgets.Bar(),
+                ' ', pb.widgets.Timer(),
+                ' ', pb.widgets.AdaptiveETA(), ' '
+            ]) # bit of styling to make the bar make more sense
+    print 'Checking if function is Additive'
+    for i in progress(range(len(primes))):
         for j in range(i,len(primes)):
             if secret.compute(primes[i] + primes[j]) != secret.compute(primes[i]) + secret.compute(primes[j]):
                 return failedMessage
@@ -139,6 +153,7 @@ def tests(secret):
     ### ------------------------ ###
     ### Input Validation Tests   ###
     ### ------------------------ ###
+    reportTestStart('Input Validation')
     # Check that input validations are working properly
     failed = False
     message = ''
@@ -155,7 +170,7 @@ def tests(secret):
         failed = True
         message = 'Test threw an exception\n\t' + str(sys.exc_info()[0])
     
-    reportTestResults('String Number Input', failed, start, message)
+    reportTestResults(failed, start, message)
 
 
     failed = False
@@ -176,12 +191,13 @@ def tests(secret):
         failed = True
         message = 'Test threw an exception\n\t' + str(sys.exc_info()[0])
     
-    reportTestResults('String Input', failed, start, message)
+    reportTestResults(failed, start, message)
 
 
     ### ------------------------ ###
     ### Overlarge Prime Test     ###
     ### ------------------------ ###
+    reportTestStart('Overlarge Prime')
     failed = False
     message = ''
     start = time.clock()
@@ -196,12 +212,13 @@ def tests(secret):
         failed = True
         message = 'Test threw an exception\n\t' + str(sys.exc_info()[0])
 
-    reportTestResults('Overlarge Prime', failed, start, message)
+    reportTestResults(failed, start, message)
     
 
     ### ------------------------ ###
     ### Way Large Prime Test     ###
     ### ------------------------ ###
+    reportTestStart('Way Large Prime')
     failed = False
     message = ''
     start = time.clock()
@@ -216,12 +233,13 @@ def tests(secret):
         failed = True
         message = 'Test threw an exception\n\t' + str(sys.exc_info()[0])
 
-    reportTestResults('Way large Prime', failed, start, message)
+    reportTestResults(failed, start, message)
 
 
     ### ------------------------ ###
     ### Prime Generation Test    ###
     ### ------------------------ ###
+    reportTestStart('Prime Generation')
     # Check that the primes generator is working properly 
     # by running it and verifying vs. primes from generators on the web.
     primesGold=(2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59,
@@ -257,12 +275,13 @@ def tests(secret):
         failed = True
         message = 'Test threw an exception\n\t' + str(sys.exc_info()[0])
 
-    reportTestResults('Prime Generation', failed, start, message)
+    reportTestResults(failed, start, message)
 
 
     ### ------------------------ ###
     ### Simple Additive 1 Test   ###
     ### ------------------------ ###
+    reportTestStart('Simple Additive 1')
     failed = False
     message = ''
     start = time.clock()
@@ -279,12 +298,13 @@ def tests(secret):
         failed = True
         message = 'Test threw an exception\n\t' + str(sys.exc_info()[0])
 
-    reportTestResults('Simple Additive 1', failed, start, message)
+    reportTestResults(failed, start, message)
 
 
     ### ------------------------ ###
     ### Simple Additive 2 Test   ###
     ### ------------------------ ###
+    reportTestStart('Simple Additive 2')
     failed = False
     message = ''
     start = time.clock()
@@ -299,12 +319,13 @@ def tests(secret):
         failed = True
         message = 'Test threw an exception\n\t' + str(sys.exc_info()[0])
 
-    reportTestResults('Simple Additive 2', failed, start, message)
+    reportTestResults(failed, start, message)
 
 
     ### ------------------------ ###
     ### Non Additive 1 Test      ###
     ### ------------------------ ###
+    reportTestStart('Non Additive 1')
     failed = False
     message = ''
     start = time.clock()
@@ -321,12 +342,13 @@ def tests(secret):
         failed = True
         message = 'Test threw an exception\n\t' + str(sys.exc_info()[0])
 
-    reportTestResults('Non Additive 1', failed, start, message)
+    reportTestResults(failed, start, message)
 
 
     ### ------------------------ ###
     ### Non Additive 2 Test      ###
     ### ------------------------ ###
+    reportTestStart('Non Additive 2')
     failed = False
     message = ''
     start = time.clock()
@@ -341,19 +363,22 @@ def tests(secret):
         failed = True
         message = 'Test threw an exception\n\t' + str(sys.exc_info()[0])
 
-    reportTestResults('Non Additive 2', failed, start, message)
+    reportTestResults(failed, start, message)
 
+
+### Have a common format for test names
+def reportTestStart(testName):
+    print testName + ' Test\n------------------------'
 
 ### Have a common format for test results so its legible
-def reportTestResults(testName, failed, start, message=''):
-    p = testName + ' Test : ' + ('Failed' if failed else 'Passed') + '\n\tTime Elapsed: ' + str(time.clock() - start)
-    p = '{tn} Test : {pf}\n\tTime Elapsed : {te:,.3f} s'\
-        .format(tn=testName, pf=('Failed' if failed else 'Passed'), te=(time.clock() - start))
+def reportTestResults(failed, start, message=''):
+    p = '\t{pf} - Time Elapsed : {te:,.3f} s'\
+        .format(pf=('Failed' if failed else 'Passed'), te=(time.clock() - start))
 
     # If it failed and had a message, go ahead and print that too
     if failed and message:
-        p = p + '\n\t' + message + '\n'
-    print p
+        p = p + '\n\t' + message
+    print p + '\n'
 
 
 ### Respond to call from command line ###
@@ -371,6 +396,6 @@ if __name__ == '__main__':
     if args.test:
         tests(s)
 
-    m = isSecretAdditive(s, args.number)
     if not args.test:
+        m = isSecretAdditive(s, args.number)
         print str(m)
