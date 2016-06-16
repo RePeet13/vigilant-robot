@@ -51,6 +51,7 @@ class Secret:
     def nonAdditiveSecret(self, num):
         return num**2
 
+    # Included to allow test class to specify the function to run
     def changeFunction(self, functionName):
         self.fn=functionName
 
@@ -58,9 +59,13 @@ class Secret:
 def isSecretAdditive(secret, num):
     # Input validation
     try:
-        num = int(num)
+        num = int(math.ceil(float(num)))
     except ValueError:
         return nanMessage
+
+    # No primes exist under 2
+    if num <= 2:
+        return noPrimesMessage
 
     # Verify large prime generation
     if num > 1000000:
@@ -77,7 +82,8 @@ def isSecretAdditive(secret, num):
 
     primes = subPrimes(num)
 
-    # Slight optimization to only calculate each combination once.
+    # Slight optimization to only calculate each combination once by 
+    # skipping the transposed lower half triangle of the matrix.
     # The worst case is when the secret is additive, as it will have to go 
     # through all combinations. It seems like generally if it's not 
     # additive it will be should be clear fairly quick. Due to that I've 
@@ -103,7 +109,8 @@ def isSecretAdditive(secret, num):
 # This function returns a list of all the primes under the passed in num
 # via the simple Sieve of Eratosthenes (with a few skipped steps)
 # ( https://en.wikipedia.org/wiki/Sieve_of_Eratosthenes ) which is an 
-# efficient way to find smaller primes.
+# efficient way to find smaller primes. If large primes were desired, 
+# a more efficient algorithm like a Wheel based approach would be used.
 def subPrimes(num):
     candidates = [True] * num
 
@@ -113,7 +120,7 @@ def subPrimes(num):
     for i in range(3,int(num**0.5)+1,2):
 
         # If the candidate has not been ruled out yet, rule out it's 
-        # multiples later in the candidate list
+        # multiples later in the candidate list.
         if candidates[i]:
 
             # Start at i^2 because all multiples below that will have 
@@ -121,7 +128,8 @@ def subPrimes(num):
             # end of the list, and step by 2*i because you start on an 
             # odd (odd*odd=odd), and can safely skip the multiples of 
             # even numbers (eg. 7*8 has to be even because it could be 
-            # rewritten as 7*4*2, or n*2, which is always even)
+            # rewritten as 7*4*2, or n*2, which is always even). The right 
+            # half just computes the number of multiples being set.
             candidates[i*i::2*i] = [False] * ((num-i*i-1)/(2*i)+1)
 
     # Prepend only even prime: two, to the list
@@ -143,6 +151,7 @@ successMessage = 'Success! The secret function is additive for all primes lower 
 failedMessage = 'Failed! The secret function is not additive for all primes lower than the value given'
 nanMessage = 'Failed! Input given is not a number.'
 largePrimeMessage = 'Program was stopped because primes would be very large'
+noPrimesMessage = 'No primes were found below the value given'
 
 
 ### ------------------------ ###
@@ -173,6 +182,25 @@ def tests(secret):
     reportTestResults(failed, start, message)
 
 
+    # Check that input validations are working properly
+    failed = False
+    message = ''
+    start = time.clock()
+
+    # Test float parses correctly
+    try:
+        secret.changeFunction('superSimpleSecret')
+        m = isSecretAdditive(secret, 5.0)
+        if m is not successMessage:
+            failed = True
+            message = 'Failed to parse number in a string'
+    except:
+        failed = True
+        message = 'Test threw an exception\n\t' + str(sys.exc_info()[0])
+    
+    reportTestResults(failed, start, message)
+
+
     failed = False
     message = ''
     start = time.clock()
@@ -187,6 +215,42 @@ def tests(secret):
         if m is not nanMessage:
             failed = True
             message = 'Failed to recognize string was not a number'
+    except:
+        failed = True
+        message = 'Test threw an exception\n\t' + str(sys.exc_info()[0])
+    
+    reportTestResults(failed, start, message)
+
+
+    failed = False
+    message = ''
+    start = time.clock()
+
+    # Test low number input
+    try:
+        secret.changeFunction('superSimpleSecret')
+        m = isSecretAdditive(secret, 2)
+        if m is not noPrimesMessage:
+            failed = True
+            message = 'Failed to recognize input was too low'
+    except:
+        failed = True
+        message = 'Test threw an exception\n\t' + str(sys.exc_info()[0])
+    
+    reportTestResults(failed, start, message)
+
+
+    failed = False
+    message = ''
+    start = time.clock()
+
+    # Test low number input
+    try:
+        secret.changeFunction('superSimpleSecret')
+        m = isSecretAdditive(secret, -12)
+        if m is not noPrimesMessage:
+            failed = True
+            message = 'Failed to recognize input was too low'
     except:
         failed = True
         message = 'Test threw an exception\n\t' + str(sys.exc_info()[0])
@@ -309,6 +373,8 @@ def tests(secret):
     message = ''
     start = time.clock()
 
+    # Test with a super simple secret that is definitely additive
+    # (Just returns the input)
     try:
         secret.changeFunction('superSimpleSecret')
         m = isSecretAdditive(secret, 1000)
@@ -330,8 +396,8 @@ def tests(secret):
     message = ''
     start = time.clock()
 
-    # Test with a super simple secret that is definitely additive
-    # (Just returns the input)
+    # Test with a simple secret that is definitely non-additive
+    # (Just squares input)
     try:
         secret.changeFunction('nonAdditiveSecret')
         m = isSecretAdditive(secret, 20)
@@ -353,6 +419,8 @@ def tests(secret):
     message = ''
     start = time.clock()
 
+    # Test with a simple secret that is definitely non-additive
+    # (Just squares input)
     try:
         secret.changeFunction('nonAdditiveSecret')
         m = isSecretAdditive(secret, 1000)
@@ -370,7 +438,7 @@ def tests(secret):
 def reportTestStart(testName):
     print testName + ' Test\n------------------------'
 
-### Have a common format for test results so its legible
+### Have a common format for test results
 def reportTestResults(failed, start, message=''):
     p = '\t{pf} - Time Elapsed : {te:,.3f} s'\
         .format(pf=('Failed' if failed else 'Passed'), te=(time.clock() - start))
