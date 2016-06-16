@@ -30,5 +30,9 @@ python vigilant-robot.py 20 -t
 time python vigilant-robot.py 1000
 ```
 
-Pypy Performance Comparison
+##Pypy Single Threaded Performance Comparison
 ![perf compare](https://raw.githubusercontent.com/RePeet13/vigilant-robot/master/pypy-perf-comparison.png)
+
+##Pypy Multiprocessing Performance Comparison
+![perf compare](https://raw.githubusercontent.com/RePeet13/vigilant-robot/master/pypy-perf-comparison-2-threads.png)
+

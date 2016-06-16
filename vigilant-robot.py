@@ -102,8 +102,11 @@ def isSecretAdditive(secret, num):
                 ' ', pb.widgets.AdaptiveETA(), ' '
             ]) # bit of styling to make the bar make more sense
     pool = Pool(processes=2)
+
     # Build list of processes. Queue from smallest to largest so that 
-    # progress bar doesn't just complete all at once.
+    # progress bar doesn't just complete all at once. I'm not worried 
+    # about the array being threadsafe because it's only being read, 
+    # and python passes in a copy anyways.
     mres = [pool.apply_async(threadedCompute,(secret, primes, i)) for i in range(len(primes)-1, -1, -1)]
     for r in progress(range(len(mres))):
         res = mres[r].get() # Blocks current thread until function returns
